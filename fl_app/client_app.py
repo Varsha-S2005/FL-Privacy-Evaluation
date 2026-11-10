@@ -127,10 +127,10 @@ def train(msg: Message, context):
     updated_arrays = ArrayRecord(torch_state_dict=updated_state)
 
     metrics_data = {
-        "num-examples": int(num_records),
-        "train-loss": float(losses[-1]),
+    "num-examples": int(num_records),
+    "train-loss": float(losses[-1]),
+    "client-id": str(client_id),
     }
-
     if epsilon is not None:
         metrics_data["local-epsilon"] = float(epsilon)
 

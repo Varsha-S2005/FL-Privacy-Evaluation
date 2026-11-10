@@ -1,6 +1,7 @@
 
 import json
 from pathlib import Path
+from collections import defaultdict
 
 import torch
 
@@ -22,6 +23,63 @@ RESULTS_DIR = PROJECT_DIR / "results" / "dp_secagg"
 
 MODEL_PATH = CHECKPOINT_DIR / "dp_secagg_model.pth"
 METRICS_PATH = RESULTS_DIR / "training_metrics.json"
+
+# --------------------------------------------------
+# Privacy tracking
+# --------------------------------------------------
+
+client_privacy = {}
+round_privacy = defaultdict(list)
+
+
+class PrivacyTrackingFedAvg(LegacyFedAvg):
+
+    def aggregate_fit(self, server_round, results, failures):
+
+        reports = []
+
+        for _, fit_res in results:
+
+            metrics = fit_res.metrics
+
+            if "local-epsilon" not in metrics:
+                continue
+
+            client_id = str(metrics["client-id"])
+            epsilon = float(metrics["local-epsilon"])
+
+            client_privacy[client_id] = epsilon
+
+            reports.append({
+                "client_id": client_id,
+                "epsilon": epsilon
+            })
+
+        round_privacy[server_round] = reports
+
+        print(f"\nPrivacy reports for round {server_round}:")
+
+        for report in reports:
+            print(
+                f"Client {report['client_id']}: "
+                f"epsilon={report['epsilon']:.6f}"
+            )
+
+        if reports:
+            values = [report["epsilon"] for report in reports]
+
+            print(f"Round maximum epsilon: {max(values):.6f}")
+            print(
+                f"Round mean epsilon: "
+                f"{sum(values) / len(values):.6f}"
+            )
+
+        return super().aggregate_fit(
+            server_round,
+            results,
+            failures
+        )
+
 
 app = ServerApp()
 
@@ -50,6 +108,10 @@ def main(grid, context):
     print("Batch size:", batch_size)
     print("Learning rate:", learning_rate)
 
+    # Reset tracking for this experiment.
+    client_privacy.clear()
+    round_privacy.clear()
+
     # --------------------------------------------------
     # Initialize global model
     # --------------------------------------------------
@@ -64,11 +126,10 @@ def main(grid, context):
     )
 
     # --------------------------------------------------
-    # Legacy FedAvg strategy
-    # SecAggPlusWorkflow uses the legacy Strategy interface
+    # Initialize privacy-tracking FedAvg
     # --------------------------------------------------
 
-    strategy = LegacyFedAvg(
+    strategy = PrivacyTrackingFedAvg(
         fraction_fit=fraction_train,
         fraction_evaluate=0.0,
         min_fit_clients=expected_clients,
@@ -79,9 +140,6 @@ def main(grid, context):
 
     # --------------------------------------------------
     # Secure Aggregation configuration
-    # Five clients are sampled per round.
-    # Each client distributes shares to three participants.
-    # Two shares are required for reconstruction.
     # --------------------------------------------------
 
     secure_aggregation = SecAggPlusWorkflow(
@@ -94,7 +152,7 @@ def main(grid, context):
     )
 
     # --------------------------------------------------
-    # Run the Flower compatibility workflow
+    # Run Flower compatibility workflow
     # --------------------------------------------------
 
     legacy_context = LegacyContext(
@@ -129,7 +187,30 @@ def main(grid, context):
     print("\nFinal global model saved:", MODEL_PATH)
 
     # --------------------------------------------------
-    # Save experiment metadata
+    # Calculate privacy summaries
+    # --------------------------------------------------
+
+    all_epsilons = list(client_privacy.values())
+
+    privacy_summary = {
+        "clients_with_privacy_reports": len(all_epsilons),
+        "maximum_client_epsilon": (
+            max(all_epsilons) if all_epsilons else None
+        ),
+        "mean_client_epsilon": (
+            sum(all_epsilons) / len(all_epsilons)
+            if all_epsilons else None
+        ),
+        "delta": 1e-5,
+        "client_epsilon": client_privacy,
+        "round_privacy": {
+            str(round_number): reports
+            for round_number, reports in round_privacy.items()
+        },
+    }
+
+    # --------------------------------------------------
+    # Save experiment metadata and privacy reports
     # --------------------------------------------------
 
     experiment_metrics = {
@@ -150,10 +231,25 @@ def main(grid, context):
         "secagg_reconstruction_threshold": 2,
         "secagg_max_weight": 10000.0,
         "secagg_clipping_range": 8.0,
+        "privacy_summary": privacy_summary,
     }
 
     with open(METRICS_PATH, "w") as file:
         json.dump(experiment_metrics, file, indent=4)
 
-    print("Experiment metadata saved:", METRICS_PATH)
+    print("\n========== PRIVACY SUMMARY ==========")
+    print(
+        "Clients with reports:",
+        privacy_summary["clients_with_privacy_reports"]
+    )
+    print(
+        "Maximum client epsilon:",
+        privacy_summary["maximum_client_epsilon"]
+    )
+    print(
+        "Mean client epsilon:",
+        privacy_summary["mean_client_epsilon"]
+    )
+
+    print("\nExperiment metadata saved:", METRICS_PATH)
     print("\n========== DP + SECURE AGGREGATION COMPLETED ==========")
