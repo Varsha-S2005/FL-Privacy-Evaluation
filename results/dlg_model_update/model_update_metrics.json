@@ -1,0 +1,94 @@
+{
+    "experiment": "Actual local DP-SGD model-update capture",
+    "initial_checkpoint": "C:\\Users\\91991\\Desktop\\fl-project\\checkpoints\\class_weighted_model.pth",
+    "num_clients": 5,
+    "local_epochs": 2,
+    "batch_size": 32,
+    "learning_rate": 0.01,
+    "dp_enabled": true,
+    "noise_multiplier": 1.0,
+    "max_grad_norm": 1.0,
+    "delta": 1e-05,
+    "aggregation": "Equal-weight average of client model deltas",
+    "clients": [
+        {
+            "client": "veins_maat.uc1.14505217.180205_165512_56",
+            "records": 166,
+            "class_distribution": {
+                "0": 166
+            },
+            "epoch_losses": [
+                0.8160111717879772,
+                0.7783922215739449
+            ],
+            "epsilon": 4.610041394031045,
+            "delta_norm": 0.09696963060380177
+        },
+        {
+            "client": "veins_maat.uc1.14505220.180205_165459_71",
+            "records": 117,
+            "class_distribution": {
+                "0": 109,
+                "1": 8
+            },
+            "epoch_losses": [
+                0.8003892467490265,
+                0.7850478751617566
+            ],
+            "epsilon": 5.467992138488782,
+            "delta_norm": 0.05930337098572977
+        },
+        {
+            "client": "veins_maat.uc1.14505226.180205_165525_69",
+            "records": 136,
+            "class_distribution": {
+                "0": 120,
+                "1": 16
+            },
+            "epoch_losses": [
+                0.7667885210477945,
+                0.774593736814416
+            ],
+            "epsilon": 4.99460264989912,
+            "delta_norm": 0.07216041437729843
+        },
+        {
+            "client": "veins_maat.uc1.14505226.180205_165525_7",
+            "records": 336,
+            "class_distribution": {
+                "0": 276,
+                "1": 60
+            },
+            "epoch_losses": [
+                0.7603609278965532,
+                0.7316778002436771
+            ],
+            "epsilon": 3.4285796930292265,
+            "delta_norm": 0.12650539826582893
+        },
+        {
+            "client": "veins_maat.uc1.14505226.180205_165525_88",
+            "records": 171,
+            "class_distribution": {
+                "0": 124,
+                "1": 47
+            },
+            "epoch_losses": [
+                0.7554922398398904,
+                0.735318550345849
+            ],
+            "epsilon": 4.610041394031045,
+            "delta_norm": 0.06981678038187357
+        }
+    ],
+    "aggregate_update_norm": 0.07376870005310143,
+    "client_update_file": "C:\\Users\\91991\\Desktop\\fl-project\\results\\dlg_model_update\\client_model_updates.npz",
+    "limitations": [
+        "This experiment uses actual local DP-SGD training.",
+        "Each client starts from the same global checkpoint.",
+        "The aggregation is an equal-weight mathematical simulation.",
+        "This is not a cryptographic SecAgg+ execution.",
+        "The experiment captures final model-parameter deltas, not raw gradients.",
+        "The accountant is reset for each independent client experiment."
+    ]
+}

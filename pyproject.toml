@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fl-app"
+version = "1.0.0"
+description = "Federated Learning Privacy Evaluation"
+requires-python = ">=3.11"
+dependencies = [
+    "flwr[simulation]==1.43.0",
+    "torch",
+    "numpy",
+    "pandas",
+    "pyarrow",
+    "opacus==1.6.0"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["fl_app", "src"]
+
+
+[tool.flwr.app]
+publisher = "varsha"
+
+[tool.flwr.app.components]
+serverapp = "fl_app.server_app:app"
+clientapp = "fl_app.client_app:app"
+
+[tool.flwr.app.config]
+num-server-rounds = 3
+fraction-train = 0.1
+local-epochs = 2
+batch-size = 32
+learning-rate = 0.01
+
+
+#######################################################################
+# CONFIGURATION MIGRATION NOTICE:
+#
+# What was previously called "federation config" for SuperLink
+# connections in pyproject.toml has been renamed and moved.
+#
+# These settings are now **SuperLink connection configuration**
+# and are defined in the Flower configuration file.
+#
+# The entries below are commented out intentionally and are kept
+# only as a migration reference.
+#
+# Docs: https://flower.ai/docs/framework/ref-flower-configuration.html
+#######################################################################
+
+# [tool.flwr.federations]
+# default = "local-simulation"
+
+# [tool.flwr.federations.local-simulation]
+# options.num-supernodes = 50
+# options.backend.client-resources.num-cpus = 1
+# options.backend.client-resources.num-gpus = 0.0
+# options.backend.init_args.num_cpus = 2

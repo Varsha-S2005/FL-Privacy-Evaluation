@@ -1,0 +1,19 @@
+{
+    "experiment": "dp_secagg",
+    "num_clients": 50,
+    "participation_fraction": 0.1,
+    "expected_clients_per_round": 5,
+    "num_rounds": 3,
+    "local_epochs": 2,
+    "batch_size": 32,
+    "learning_rate": 0.01,
+    "dp_enabled": true,
+    "secure_aggregation_enabled": true,
+    "noise_multiplier": 1.0,
+    "max_grad_norm": 1.0,
+    "delta": 1e-05,
+    "secagg_num_shares": 3,
+    "secagg_reconstruction_threshold": 2,
+    "secagg_max_weight": 10000.0,
+    "secagg_clipping_range": 8.0
+}

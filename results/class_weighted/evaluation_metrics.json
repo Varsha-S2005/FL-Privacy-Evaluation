@@ -1,0 +1,19 @@
+{
+    "experiment": "class_weighted",
+    "test_records": 386815,
+    "test_clients": 847,
+    "training_test_client_overlap": 0,
+    "threshold": 0.5757317543029785,
+    "test_loss": 0.7638322971939105,
+    "accuracy": 0.7852461771130902,
+    "precision": 0.4667828223319712,
+    "recall": 0.4788350263597788,
+    "f1_score": 0.47273211973493795,
+    "roc_auc": 0.7111310753113711,
+    "confusion_matrix": {
+        "true_negative": 266506,
+        "false_positive": 42539,
+        "false_negative": 40531,
+        "true_positive": 37239
+    }
+}

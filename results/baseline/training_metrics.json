@@ -1,0 +1,21 @@
+{
+    "experiment": "baseline_fedavg",
+    "num_clients": 50,
+    "participation_fraction": 0.1,
+    "expected_clients_per_round": 5,
+    "num_rounds": 3,
+    "local_epochs": 2,
+    "batch_size": 32,
+    "learning_rate": 0.01,
+    "round_metrics": {
+        "1": {
+            "train-loss": 0.6294937424368123
+        },
+        "2": {
+            "train-loss": 0.5994583088113035
+        },
+        "3": {
+            "train-loss": 0.4584861549457283
+        }
+    }
+}

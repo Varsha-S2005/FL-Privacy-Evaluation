@@ -1,0 +1,28 @@
+{
+    "experiment": "dp_fedavg",
+    "num_clients": 50,
+    "participation_fraction": 0.1,
+    "expected_clients_per_round": 5,
+    "num_rounds": 3,
+    "local_epochs": 2,
+    "batch_size": 32,
+    "learning_rate": 0.01,
+    "dp_enabled": true,
+    "noise_multiplier": 1.0,
+    "max_grad_norm": 1.0,
+    "delta": 1e-05,
+    "round_metrics": {
+        "1": {
+            "train-loss": 0.6189697866050973,
+            "local-epsilon": 2.290101195616384
+        },
+        "2": {
+            "train-loss": 0.5290406292745969,
+            "local-epsilon": 2.4282102267723618
+        },
+        "3": {
+            "train-loss": 0.5566927795920227,
+            "local-epsilon": 4.788169274649607
+        }
+    }
+}

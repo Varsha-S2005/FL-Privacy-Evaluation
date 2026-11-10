@@ -1,0 +1,22 @@
+{
+    "experiment": "class_weighted_fedavg",
+    "num_clients": 50,
+    "participation_fraction": 0.1,
+    "expected_clients_per_round": 5,
+    "num_rounds": 3,
+    "local_epochs": 2,
+    "batch_size": 32,
+    "learning_rate": 0.01,
+    "positive_class_weight": 4.269431338465359,
+    "round_metrics": {
+        "1": {
+            "train-loss": 1.0918593073175067
+        },
+        "2": {
+            "train-loss": 1.3239235498926094
+        },
+        "3": {
+            "train-loss": 1.1546900152714572
+        }
+    }
+}
