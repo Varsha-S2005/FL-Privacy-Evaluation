@@ -15,26 +15,61 @@ from flwr.app import (
 )
 from flwr.common import Code
 
-from src.client import train_local_model
+from src.client import (
+    train_local_model_distributed_dp,
+    CLIENT_UPDATE_CLIP_NORM,
+    DISTRIBUTED_NOISE_MULTIPLIER,
+    SELECTED_CLIENTS_PER_ROUND,
+    MIN_HONEST_NOISE_CONTRIBUTORS,
+    DISTRIBUTED_POSITIVE_CLASS_WEIGHT,
+)
 from src.model import MLP
 
 
+# --------------------------------------------------
+# Paths
+# --------------------------------------------------
+
 PROJECT_DIR = Path(__file__).resolve().parent.parent
-DATA_PATH = PROJECT_DIR / "results" / "selected_50_clients_seed42.parquet"
-CLIENT_LIST_PATH = PROJECT_DIR / "results" / "selected_clients_seed42.json"
+
+DATA_PATH = (
+    PROJECT_DIR
+    / "results"
+    / "selected_50_clients_seed42.parquet"
+)
+
+CLIENT_LIST_PATH = (
+    PROJECT_DIR
+    / "results"
+    / "selected_clients_seed42.json"
+)
+
+
+# --------------------------------------------------
+# Flower ClientApp
+# --------------------------------------------------
 
 app = ClientApp(mods=[secaggplus_mod])
 
 
 @app.train()
 def train(msg: Message, context):
-    partition_id = int(context.node_config["partition-id"])
+
+    # --------------------------------------------------
+    # 1. Identify the dataset client
+    # --------------------------------------------------
+
+    partition_id = int(
+        context.node_config["partition-id"]
+    )
 
     with open(CLIENT_LIST_PATH, "r") as file:
         selected_clients = json.load(file)
 
     if not 0 <= partition_id < len(selected_clients):
-        raise ValueError(f"Invalid partition ID: {partition_id}")
+        raise ValueError(
+            f"Invalid partition ID: {partition_id}"
+        )
 
     client_id = selected_clients[partition_id]
 
@@ -43,110 +78,178 @@ def train(msg: Message, context):
         f"assigned to dataset client {client_id}"
     )
 
+    # --------------------------------------------------
+    # 2. Load this client's local data
+    # --------------------------------------------------
+
     df = pd.read_parquet(
         DATA_PATH,
         filters=[("client", "==", client_id)],
     )
 
     if df.empty:
-        raise ValueError(f"No records found for client {client_id}")
+        raise ValueError(
+            f"No records found for client {client_id}"
+        )
 
-    print("Local records:", len(df))
+    print("Actual local records:", len(df))
+
+    # --------------------------------------------------
+    # 3. Read global parameters from Flower
+    # --------------------------------------------------
 
     if "fitins.parameters" not in msg.content:
         raise KeyError(
-            f"Missing fitins.parameters. Available: {list(msg.content.keys())}"
+            "Missing fitins.parameters. "
+            f"Available records: {list(msg.content.keys())}"
         )
 
     if "fitins.config" not in msg.content:
         raise KeyError(
-            f"Missing fitins.config. Available: {list(msg.content.keys())}"
+            "Missing fitins.config. "
+            f"Available records: {list(msg.content.keys())}"
         )
 
     global_parameters = msg.content["fitins.parameters"]
     train_config = msg.content["fitins.config"]
 
     if not isinstance(global_parameters, ArrayRecord):
-        raise TypeError("fitins.parameters is not an ArrayRecord")
+        raise TypeError(
+            "fitins.parameters is not an ArrayRecord"
+        )
 
     if not isinstance(train_config, ConfigRecord):
-        raise TypeError("fitins.config is not a ConfigRecord")
+        raise TypeError(
+            "fitins.config is not a ConfigRecord"
+        )
 
-    received_state = global_parameters.to_torch_state_dict()
+    received_state = (
+        global_parameters.to_torch_state_dict()
+    )
+
     model_keys = list(MLP().state_dict().keys())
 
     if len(received_state) != len(model_keys):
         raise ValueError(
-            f"Model parameter count mismatch: received "
-            f"{len(received_state)}, expected {len(model_keys)}"
+            "Model parameter count mismatch: "
+            f"received {len(received_state)}, "
+            f"expected {len(model_keys)}"
         )
 
-    global_state = dict(zip(model_keys, received_state.values()))
+    global_state = {
+        key: value.detach().cpu().clone()
+        for key, value in zip(
+            model_keys,
+            received_state.values()
+        )
+    }
 
-    epochs = int(context.run_config["local-epochs"])
-    batch_size = int(context.run_config["batch-size"])
-    learning_rate = float(context.run_config["learning-rate"])
+    # --------------------------------------------------
+    # 4. Read local training configuration
+    # --------------------------------------------------
 
-    print(
-        f"Training configuration: epochs={epochs}, "
-        f"batch_size={batch_size}, lr={learning_rate}"
+    epochs = int(
+        context.run_config["local-epochs"]
     )
 
-    accountant_state = None
+    batch_size = int(
+        context.run_config["batch-size"]
+    )
 
-    if "privacy" in context.state:
-        privacy_record = context.state["privacy"]
-        accountant_json = privacy_record["accountant_state"]
-        accountant_state = json.loads(accountant_json)
-        print("Previous privacy accountant state found.")
-    else:
-        print("No previous privacy history. Starting fresh.")
+    learning_rate = float(
+        context.run_config["learning-rate"]
+    )
+
+    print(
+        "\nTraining configuration:"
+        f"\nEpochs: {epochs}"
+        f"\nBatch size: {batch_size}"
+        f"\nLearning rate: {learning_rate}"
+        f"\nUpdate clipping norm: {CLIENT_UPDATE_CLIP_NORM}"
+        f"\nNoise multiplier: {DISTRIBUTED_NOISE_MULTIPLIER}"
+        f"\nSelected clients: {SELECTED_CLIENTS_PER_ROUND}"
+        f"\nMinimum honest contributors: "
+        f"{MIN_HONEST_NOISE_CONTRIBUTORS}"
+        f"\nPositive class weight: "
+        f"{DISTRIBUTED_POSITIVE_CLASS_WEIGHT}"
+    )
+
+    # --------------------------------------------------
+    # 5. Distributed-DP local training
+    # --------------------------------------------------
 
     (
         updated_state,
         num_records,
         losses,
-        updated_accountant_state,
-        epsilon,
-    ) = train_local_model(
+        update_norm,
+        clipped_norm,
+        clip_factor,
+        noise_share_std,
+    ) = train_local_model_distributed_dp(
         initial_state=global_state,
         client_data=df,
         epochs=epochs,
         batch_size=batch_size,
         learning_rate=learning_rate,
-        accountant_state=accountant_state,
+        clip_norm=CLIENT_UPDATE_CLIP_NORM,
+        noise_multiplier=DISTRIBUTED_NOISE_MULTIPLIER,
+        selected_clients=SELECTED_CLIENTS_PER_ROUND,
+        min_honest_clients=MIN_HONEST_NOISE_CONTRIBUTORS,
+        positive_class_weight=DISTRIBUTED_POSITIVE_CLASS_WEIGHT,
     )
 
-    if updated_accountant_state is not None:
-        accountant_json = json.dumps(updated_accountant_state)
-        context.state["privacy"] = ConfigRecord(
-            {"accountant_state": accountant_json}
-        )
-        print(f"Saved cumulative epsilon: {epsilon:.6f}")
+    # --------------------------------------------------
+    # 6. Prepare updated model parameters
+    # --------------------------------------------------
 
-    updated_arrays = ArrayRecord(torch_state_dict=updated_state)
+    updated_arrays = ArrayRecord(
+        torch_state_dict=updated_state
+    )
 
-    metrics_data = {
-        "num-examples": int(num_records),
-        "train-loss": float(losses[-1]),
-    }
+    # --------------------------------------------------
+    # 7. Prepare training metrics
+    # --------------------------------------------------
 
-    if epsilon is not None:
-        metrics_data["local-epsilon"] = float(epsilon)
+    metrics = ConfigRecord(
+        {
+            "actual-records": int(num_records),
+            "train-loss": float(losses[-1]),
+            "client-id": str(client_id),
+            "client-update-norm": float(update_norm),
+            "clipped-update-norm": float(clipped_norm),
+            "update-clip-factor": float(clip_factor),
+            "noise-share-std": float(noise_share_std),
+        }
+    )
 
-    # Flower compatibility records required by recorddict_to_fitres
-    metrics = ConfigRecord(metrics_data)
+    # --------------------------------------------------
+    # 8. Equal client weighting for SecAgg+
+    #
+    # Each client contributes weight 1.
+    # Actual dataset size is recorded separately.
+    # --------------------------------------------------
 
     num_examples_record = MetricRecord(
-        {"num_examples": int(num_records)}
+        {
+            "num_examples": 1
+        }
     )
 
+    # --------------------------------------------------
+    # 9. Flower response status
+    # --------------------------------------------------
+
     status_record = ConfigRecord(
-    {
-        "code": Code.OK.value,
-        "message": "",
-    }
+        {
+            "code": Code.OK.value,
+            "message": "",
+        }
     )
+
+    # --------------------------------------------------
+    # 10. Construct Flower response
+    # --------------------------------------------------
 
     reply_content = RecordDict(
         {
@@ -158,8 +261,16 @@ def train(msg: Message, context):
     )
 
     print(
-        f"Client {client_id} training complete. "
-        f"Examples={num_records}, loss={losses[-1]:.6f}"
+        f"\nClient {client_id} training complete."
+        f"\nActual records: {num_records}"
+        f"\nTraining loss: {losses[-1]:.6f}"
+        f"\nOriginal update norm: {update_norm:.6f}"
+        f"\nClipped update norm: {clipped_norm:.6f}"
+        f"\nNoise share std: {noise_share_std:.6f}"
+        f"\nFlower aggregation weight: 1"
     )
 
-    return Message(content=reply_content, reply_to=msg)
+    return Message(
+        content=reply_content,
+        reply_to=msg,
+    )
