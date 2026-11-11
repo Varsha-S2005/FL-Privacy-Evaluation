@@ -218,5 +218,137 @@
                 0.38789192020893093
             ]
         }
+    },
+    "distributed_dp_secagg": {
+        "experiment": "distributed_dp_secagg",
+        "roc_auc": 0.5390667639871869,
+        "default_threshold_metrics": {
+            "threshold": 0.5,
+            "accuracy": 0.8028708912195774,
+            "precision": 0.7855100095328885,
+            "recall": 0.00287479633951903,
+            "f1_score": 0.005728627145628098,
+            "confusion_matrix": {
+                "true_negative": 1164124,
+                "false_positive": 225,
+                "false_negative": 285805,
+                "true_positive": 824
+            }
+        },
+        "best_f1_threshold": 0.3186856508255005,
+        "best_f1_metrics": {
+            "threshold": 0.3186856508255005,
+            "accuracy": 0.19853230028298155,
+            "precision": 0.19765183085839838,
+            "recall": 0.9992813009151202,
+            "f1_score": 0.33002642073376587,
+            "confusion_matrix": {
+                "true_negative": 1643,
+                "false_positive": 1162706,
+                "false_negative": 206,
+                "true_positive": 286423
+            }
+        },
+        "probability_distribution": {
+            "min": 0.16311724483966827,
+            "max": 0.5390477180480957,
+            "mean": 0.45383480191230774,
+            "percentiles": [
+                0.44959989190101624,
+                0.45420512557029724,
+                0.4584244340658188,
+                0.4633660584688187,
+                0.46688435822725294,
+                0.48087292432785034
+            ]
+        }
+    },
+    "distributed_dp_secagg_no_noise": {
+        "experiment": "distributed_dp_secagg_no_noise",
+        "roc_auc": 0.6050221470401684,
+        "default_threshold_metrics": {
+            "threshold": 0.5,
+            "accuracy": 0.8040997175698047,
+            "precision": 0.6524967989756723,
+            "recall": 0.017779080274501185,
+            "f1_score": 0.034614979673209055,
+            "confusion_matrix": {
+                "true_negative": 1161635,
+                "false_positive": 2714,
+                "false_negative": 281533,
+                "true_positive": 5096
+            }
+        },
+        "best_f1_threshold": 0.44446951150894165,
+        "best_f1_metrics": {
+            "threshold": 0.44446951150894165,
+            "accuracy": 0.6359021294602675,
+            "precision": 0.2800005097870001,
+            "recall": 0.5365472439983393,
+            "f1_score": 0.3679723596027171,
+            "confusion_matrix": {
+                "true_negative": 768890,
+                "false_positive": 395459,
+                "false_negative": 132839,
+                "true_positive": 153790
+            }
+        },
+        "probability_distribution": {
+            "min": 0.17181281745433807,
+            "max": 0.5908774733543396,
+            "mean": 0.44266608357429504,
+            "percentiles": [
+                0.43271446228027344,
+                0.4400818198919296,
+                0.4506443738937378,
+                0.46303375363349913,
+                0.470337751507759,
+                0.4903898075222969
+            ]
+        }
+    },
+    "distributed_dp_secagg_classweight1": {
+        "experiment": "distributed_dp_secagg_classweight1",
+        "roc_auc": 0.4941571798033089,
+        "default_threshold_metrics": {
+            "threshold": 0.5,
+            "accuracy": 0.8024856338276666,
+            "precision": 0.9347826086956522,
+            "recall": 0.00015001971189237655,
+            "f1_score": 0.0002999912793232755,
+            "confusion_matrix": {
+                "true_negative": 1164346,
+                "false_positive": 3,
+                "false_negative": 286586,
+                "true_positive": 43
+            }
+        },
+        "best_f1_threshold": 0.334837943315506,
+        "best_f1_metrics": {
+            "threshold": 0.334837943315506,
+            "accuracy": 0.1975419337853503,
+            "precision": 0.1975419337853503,
+            "recall": 1.0,
+            "f1_score": 0.32991234496638194,
+            "confusion_matrix": {
+                "true_negative": 0,
+                "false_positive": 1164349,
+                "false_negative": 0,
+                "true_positive": 286629
+            }
+        },
+        "probability_distribution": {
+            "min": 0.334837943315506,
+            "max": 0.5593781471252441,
+            "mean": 0.4267265796661377,
+            "percentiles": [
+                0.4185904562473297,
+                0.4307881295681,
+                0.43618790805339813,
+                0.44330406188964844,
+                0.4475964307785034,
+                0.456633748114109
+            ]
+        }
     }
 }
